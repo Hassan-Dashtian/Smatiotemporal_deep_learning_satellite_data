@@ -1,0 +1,5 @@
+,logger_ID,files,LAT,LON,Owner,folders
+0,CR300_17_TRACER1,E:\Soil_Moisture\Codes\website\LoggerNet\CR300_17_TRACER1_SubHourly_soil.dat,29.388,-95.0425,TxSON,CR300_17
+1,CR300_18_TRACER2,E:\Soil_Moisture\Codes\website\LoggerNet\CR300_18_TRACER2_SubHourly_soil.dat,29.6697,-95.0584,TxSON,CR300_18
+2,CR300_19_TRACER3,E:\Soil_Moisture\Codes\website\LoggerNet\CR300_19_TRACER3_SubHourly_soil.dat,29.57336,-95.64948,TxSON,CR300_19
+3,CR300_20_TRACER4,E:\Soil_Moisture\Codes\website\LoggerNet\CR300_20_TRACER4_SubHourly_soil.dat,29.3292313,-95.7403961,TxSON,CR300_20

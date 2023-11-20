@@ -1,0 +1,129 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r 01 loading packages}
+library(smapr)# smap data
+library(rworldmap)
+library(lubridate) # dates format
+library(magrittr)
+library(tibble)
+library(tidyr)
+library(R.matlab) # to read matlab data
+library(sf)
+library(sp)
+
+library(tmap, quietly = T)
+library(sp, quietly = T)
+library(geoR)
+library(devtools)
+library(rhdf5)
+library(raster)
+library(tidyverse)
+library(rnoaa)
+library(plotly)
+library(rasterVis)
+library(animation)
+library(patchwork)
+library(sf) 
+library(urbnmapr)
+library(tidyverse) 
+library(gganimate)
+library(rgeos)
+library(rgdal)
+library(readr)
+library(BAS) #  data fusion using Bayesian model averaging
+library(R.matlab) # to read matlab data
+library(rgdal)
+library(sf)
+library(sp)
+library(maptools)
+library(mapview)
+library(tsibble)
+library(dplyr)
+
+
+#install.packages("https://github.com/tmcd82070/SDraw/archive/refs/tags/v2.1.13.tar.gz", repo=NULL, type="source")
+```
+ 
+ 
+ 
+```{r 01 Download SMAP data and extract the study area}
+#set_smap_credentials(overwrite = TRUE)
+# <- seq(as.Date("2021-04-01"), as.Date("2021-12-31"), by= "12 hours")
+set_smap_credentials("username","password",overwrite = TRUE)
+
+worldmap <- getMap()
+#study_area <- subset(worldmap, NAME_SORT %in% c('Somalia', 'Kenya'))
+#study_area_sf <- as(study_area, 'sf')
+
+
+#start_dt<- seq(c(ISOdate(2022,01,01,01,00,00)), c(ISOdate(2021,04,30,19,00,00)),by = "6 hour")
+#fNames<- seq(c(ISOdate(2022,01,01,01,00,00)), c(ISOdate(2022,07,06,00,00,00)),by = "6 hour")
+ 
+#start <- as.POSIXct("2022-05-01 01:00:00")
+#end <- as.POSIXct("2022-05-05 19:00:00")
+
+
+## 11, 12, 13  january 2022 are m
+start_dt<- seq(as.POSIXct("2023-01-14 01:00:00"), as.POSIXct("2023-01-15 20:00:00"),by = "6 hour")
+fNames<- seq(as.POSIXct("2023-01-14 01:00:00"), as.POSIXct("2023-01-15 20:00:00"),by = "6 hour")
+hourly6_smap3 <- vector(mode = 'list', length = length(fNames))
+
+#the avaialbe data
+end_dt<-start_dt+hours(6)
+# check the avaialbe data
+files <- (find_smap('SPL4SMGP', dates = start_dt, version = 7))
+files2=files[complete.cases(files), ]## remove na ----
+files4=unique(files2) 
+d1=1; d2=2;
+
+for (il in 1:length(fNames)){
+  # Download smap
+downloads <- download_smap(files4[d1:d2,], overwrite = TRUE)
+sm_raster <- extract_smap(downloads, name = "Geophysical_Data/sm_rootzone")  # 0 -100 cm rootzone # 0
+  #d=sm_raster[1:1624,1:3856,1:2]
+  h6_smap <- projectRaster(sm_raster, crs = projection(worldmap))
+  Sm_6<-stack(h6_smap)
+  names(Sm_6)<-c("3hrs","6hrs")
+  df_h<-Sm_6 %>%
+      trim %>%
+      as('SpatialPixelsDataFrame') %>%
+      as.data.frame() %>%
+      gather(date, value, -x, -y) %>%
+      as_data_frame
+# subset Houston area
+  idx<-subset(df_h, df_h$x>-96&df_h$x< -94) # over longitudes
+  idxy<-subset(idx, idx$y>28.6&idx$y<31.3)  # over latitudes
+  idxy_6hr<-as.data.frame(idxy%>% group_by(x,y)%>%   # over time
+    summarize(SM_m3_m3 = mean(value, na.rm = TRUE)))
+ hourly6_smap3[[il]] <-idxy_6hr
+ fname=paste(paste(as.character(il+1512),as.character(fNames[il]),sep='_'),'csv',sep='.')
+ print(fname)
+ fname=gsub("\\:", "_", fname)
+ print(fname)
+ write.csv(idxy_6hr, file=fname)
+  rm (idx, idxy,idxy_6hr,downloads,h6_smap,h6_smap,sm_raster,fname)
+print (il)
+ d1=d2+1;d2=d2+2
+}
+
+#hourly6_smap2 <- vector(mode = 'list', length = length(fNames))
+#hourly6_smap3[1:40]<- hourly6_smap2[1:40]
+#hourly6_smap3[52:480]<- hourly6_smap2[41:469]
+
+#hourly6_smap3[1:40]
+
+
+
+##hourly6_smap3_X <- do.call(rbind, hourly6_smap3)
+save(hourly6_smap3, file = "SMAp2022_6hrs_Houston_dataJuly.RData")
+ 
+ 
